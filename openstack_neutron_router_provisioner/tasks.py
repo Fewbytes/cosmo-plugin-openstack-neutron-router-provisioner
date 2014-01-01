@@ -34,7 +34,7 @@ def provision(__cloudify_id, router, **kwargs):
 def add_gateway(router, network):
     neutron_client = _init_client()
     rtr = _get_router_by_name(neutron_client, router['name'])
-    net = _get_network_by_name(neutron_client, network['name']) # WARNING: using private function
+    net = _get_network_by_name(neutron_client, network['name'])
     neutron_client.add_gateway_router(rtr['id'], {'network_id': net['id']})
     
 
