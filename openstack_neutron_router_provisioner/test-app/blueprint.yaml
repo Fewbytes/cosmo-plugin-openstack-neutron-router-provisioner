@@ -1,0 +1,27 @@
+# vim: ts=4 sw=4 et
+imports:
+    - 'cloudify.types'
+    - 'neutron-router-type.yaml'
+
+
+blueprint:
+    name: 'neutron-router-test'
+    topology:
+        -
+            name: 'neutron_router'
+            type: 'neutron_router'
+            interfaces:
+                    - 'cloudify.interfaces.router_provisioner'
+            properties:
+                router:
+                    name: 'neutron_router_test'
+
+            policies:
+                -
+                    name: 'start_detection_policy'
+                    rules:
+                        -
+                            type: 'state_equals'
+                            properties:
+                                service: 'router status'
+                                state: 'running'

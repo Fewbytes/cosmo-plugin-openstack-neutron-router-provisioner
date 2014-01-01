@@ -1,0 +1,30 @@
+# vim: ts=4 sw=4 et
+imports:
+    - 'cloudify.types'
+
+plugins:
+    # * "cloudify.plugins." is a must
+    # * Last part must match the folder name of the folder where tasks.py resides
+    cloudify.plugins.openstack_neutron_router_provisioner:
+        derived_from: 'cloudify.plugins.remote_plugin'
+        properties:
+            interface: 'cloudify.interfaces.router_provisioner'
+            url: 'https://github.com/Fewbytes/cosmo-plugin-openstack-neutron-router-provisioner/archive/master.zip'
+
+
+interfaces:
+    cloudify.interfaces.router_provisioner:
+        operations:
+            - provision
+
+
+types:
+    neutron_router:
+        interfaces:
+            - cloudify.interfaces.router_provisioner
+        workflows:
+            init:
+                radial: |
+                    define neutron_router_init
+                        execute_operation operation: 'provision'
+
