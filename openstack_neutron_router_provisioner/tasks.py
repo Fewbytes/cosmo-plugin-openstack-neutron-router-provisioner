@@ -31,7 +31,7 @@ def provision(__cloudify_id, router, **kwargs):
 
 
 @task
-def add_gateway(router, network):
+def add_gateway(router, network, **kwargs):
     neutron_client = _init_client()
     rtr = _get_router_by_name(neutron_client, router['name'])
     net = _get_network_by_name(neutron_client, network['name'])
