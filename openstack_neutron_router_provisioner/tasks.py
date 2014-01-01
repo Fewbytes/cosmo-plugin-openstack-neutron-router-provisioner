@@ -13,7 +13,6 @@ from neutronclient.neutron import client
 
 # Cosmo
 from cosmo.events import send_event
-import openstack_neutron_network_provisioner.tasks as net_prov
 
 @task
 def provision(__cloudify_id, router, **kwargs):
@@ -35,7 +34,7 @@ def provision(__cloudify_id, router, **kwargs):
 def add_gateway(router, network):
     neutron_client = _init_client()
     rtr = _get_router_by_name(neutron_client, router['name'])
-    net = net_prov._get_network_by_name(neutron_client, network['name']) # WARNING: using private function
+    net = _get_network_by_name(neutron_client, network['name']) # WARNING: using private function
     neutron_client.add_gateway_router(rtr['id'], {'network_id': net['id']})
     
 
@@ -85,6 +84,17 @@ def _get_router_by_name_or_fail(neutron_client, name):
     if router:
         return router
     raise ValueError("Lookup of router by name failed. Could not find a router with name {0}".format(name))
+
+def _get_network_by_name(neutron_client, name):
+    # TODO: check whether neutron_client can get networks only named `name`
+    matching_networks = neutron_client.list_networks(name=name)['networks']
+
+    if len(matching_networks) == 0:
+        return None
+    if len(matching_networks) == 1:
+        return matching_networks[0]
+    raise RuntimeError("Lookup of network by name failed. There are {0} networks named '{1}'"
+                       .format(len(matching_networks), name))
 
 
 if __name__ == '__main__':
