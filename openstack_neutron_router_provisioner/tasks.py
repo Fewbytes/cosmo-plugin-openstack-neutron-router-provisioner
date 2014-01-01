@@ -21,11 +21,16 @@ def provision(__cloudify_id, router, **kwargs):
         raise RuntimeError("Can not provision router with name '{0}' because router with such name already exists"
                            .format(router['name']))
 
-    rtr = neutron_client.create_router({
-        'router': {
-            'name': router['name'],
+    rtr_dict = {
+        'name': router['name'],
+    }
+
+    if 'gateway' in router:
+        rtr_dict['external_gateway_info'] = {
+            'network_id': _get_network_by_name(neutron_client, router['gateway'])['id']
         }
-    })['router']
+
+    rtr = neutron_client.create_router({'router': rtr_dict})['router']
 
     send_event(__cloudify_id, "rtr-" + router['name'], "router status", "state", "running")
 

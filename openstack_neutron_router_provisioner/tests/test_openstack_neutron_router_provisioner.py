@@ -39,6 +39,7 @@ class OpenstackNeutronRouterProvisionerTestCase(unittest.TestCase):
         tasks.provision(name, router)
         router = tasks._get_router_by_name(self.neutron_client, name)
         self.assertIsNotNone(router)
+        self.assertIsNone(router['external_gateway_info']) # must not have gateway
 
         tasks.terminate(router)
         router = tasks._get_router_by_name(self.neutron_client, name)
@@ -52,24 +53,23 @@ class OpenstackNeutronRouterProvisionerTestCase(unittest.TestCase):
         return None
 
 
-    def test_add_gateway(self):
+    def test_router_with_gateway(self):
 
         ext_net = self.find_external_net()
         if not ext_net:
             raise RuntimeError("Failed to find external network for router gateway test")
 
-        # Step 2: test gateway connection
         name = self.name_prefix + 'rtr2'
         router = {
             'name': name,
+            'gateway': ext_net['name']
         }
 
         tasks.provision(name, router)
         router = tasks._get_router_by_name(self.neutron_client, name)
         self.assertIsNotNone(router)
-
-        tasks.add_gateway(router, ext_net)
         rtr = tasks._get_router_by_name(self.neutron_client, router['name'])
+        self.assertIsNotNone(rtr['external_gateway_info'])
         self.assertEquals(rtr['external_gateway_info']['network_id'], ext_net['id'])
 
 

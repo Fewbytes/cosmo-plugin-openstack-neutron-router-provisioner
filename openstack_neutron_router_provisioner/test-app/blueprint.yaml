@@ -7,6 +7,7 @@ imports:
 blueprint:
     name: 'neutron-router-test'
     topology:
+
         -
             name: 'neutron_router'
             type: 'neutron_router'
@@ -14,8 +15,26 @@ blueprint:
                     - 'cloudify.interfaces.router_provisioner'
             properties:
                 router:
-                    name: 'neutron_router_test'
+                    name: 'neutron_simple_router_test'
+            policies:
+                -
+                    name: 'start_detection_policy'
+                    rules:
+                        -
+                            type: 'state_equals'
+                            properties:
+                                service: 'router status'
+                                state: 'running'
 
+        -
+            name: 'neutron_router_with_gw'
+            type: 'neutron_router'
+            interfaces:
+                    - 'cloudify.interfaces.router_provisioner'
+            properties:
+                router:
+                    name: 'neutron_router_with_gw_test'
+                    gateway: 'public'
             policies:
                 -
                     name: 'start_detection_policy'
