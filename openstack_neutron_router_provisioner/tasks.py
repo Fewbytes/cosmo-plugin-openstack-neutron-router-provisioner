@@ -35,13 +35,21 @@ def provision(__cloudify_id, router, **kwargs):
     send_event(__cloudify_id, "rtr-" + router['name'], "router status", "state", "running")
 
 
+# Untested and unused for now
 @task
-def add_gateway(router, network, **kwargs):
+def connect_gateway(router, network, **kwargs):
     neutron_client = _init_client()
     rtr = _get_router_by_name(neutron_client, router['name'])
     net = _get_network_by_name(neutron_client, network['name'])
     neutron_client.add_gateway_router(rtr['id'], {'network_id': net['id']})
     
+@task
+def connect_subnet(router, subnet, **kwargs):
+    neutron_client = _init_client()
+    rtr = _get_router_by_name(neutron_client, router['name'])
+    subnet = _get_subnet_by_name(neutron_client, subnet['name'])
+    # print(dir(neutron_client))
+    neutron_client.add_interface_router(rtr['id'], {'subnet_id': subnet['id']})
 
 @task
 def terminate(router, **kwargs):
@@ -71,36 +79,26 @@ def _init_keystone_client():
     args = {field: cfg[field] for field in ('username', 'password', 'tenant_name', 'auth_url')}
     return ksclient.Client(**args)
 
+def _make_get_obj_by_name(single):
 
-def _get_router_by_name(neutron_client, name):
-    # TODO: check whether neutron_client can get routers only named `name`
-    matching_routers = neutron_client.list_routers(name=name)['routers']
+    plural = single + 's'
+    def f(neutron_client, name):
+        matching_objs = getattr(neutron_client, 'list_'+ plural)(name=name)[plural]
 
-    if len(matching_routers) == 0:
-        return None
-    if len(matching_routers) == 1:
-        return matching_routers[0]
-    raise RuntimeError("Lookup of router by name failed. There are {0} routers named '{1}'"
-                       .format(len(matching_routers), name))
+        if len(matching_objs) == 0:
+            return None
+        if len(matching_objs) == 1:
+            return matching_objs[0]
+        raise RuntimeError("Lookup of {0} by name failed. There are {2} {1} named '{3}'"
+                           .format(single, plural, len(matching_objs), name))
+
+    f.func_name = '_get_' + single + '_by_name'
+    return f
 
 
-def _get_router_by_name_or_fail(neutron_client, name):
-    router = _get_router_by_name(neutron_client, name)
-    if router:
-        return router
-    raise ValueError("Lookup of router by name failed. Could not find a router with name {0}".format(name))
-
-def _get_network_by_name(neutron_client, name):
-    # TODO: check whether neutron_client can get networks only named `name`
-    matching_networks = neutron_client.list_networks(name=name)['networks']
-
-    if len(matching_networks) == 0:
-        return None
-    if len(matching_networks) == 1:
-        return matching_networks[0]
-    raise RuntimeError("Lookup of network by name failed. There are {0} networks named '{1}'"
-                       .format(len(matching_networks), name))
-
+_get_router_by_name = _make_get_obj_by_name('router')
+_get_network_by_name = _make_get_obj_by_name('network')
+_get_subnet_by_name = _make_get_obj_by_name('subnet')
 
 if __name__ == '__main__':
     neutron_client = _init_client()
