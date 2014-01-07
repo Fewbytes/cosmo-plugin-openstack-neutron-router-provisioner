@@ -22,6 +22,7 @@ class OpenstackNeutronRouterProvisionerTestCase(unittest.TestCase):
         self.logger.level = logging.DEBUG
         self.logger.info("setUp called")
         self.neutron_client = tasks._init_client()
+        # print(json.dumps(sorted(dir(self.neutron_client)), indent=4))
         self.name_prefix = 'cosmo_test_neutron_{0}_'.format(''.join(
             [random.choice(string.ascii_uppercase + string.digits) for i in range(RANDOM_LEN)]
         ))
@@ -92,7 +93,15 @@ class OpenstackNeutronRouterProvisionerTestCase(unittest.TestCase):
         self.assertEquals(rtr['external_gateway_info']['network_id'], ext_net['id'])
         self.assertTrue(rtr['external_gateway_info']['enable_snat'])  # Empirical
 
-    def test_connect_subnet(self):
+    def _network_has_port_in_router(self, net, rtr):
+        for port in self._list_all_objs('port'):
+            if port.get('device_owner') == 'network:router_interface' and \
+                    port.get('device_id') == rtr['id'] and \
+                    port.get('network_id') == net['id']:
+                return True
+        return False
+
+    def test_connect_disconnect_subnet(self):
 
         # Router
         name = self.name_prefix + 'rtr3'
@@ -123,17 +132,11 @@ class OpenstackNeutronRouterProvisionerTestCase(unittest.TestCase):
 
         # Connect router and subnet
         tasks.connect_subnet(rtr, subnet)
+        self.assertTrue(self._network_has_port_in_router(net, rtr))
 
-        network_has_port_in_router = False
-        for port in self._list_all_objs('port'):
-            if port.get('device_owner') == 'network:router_interface' and \
-                    port.get('device_id') == rtr['id'] and \
-                    port.get('network_id') == net['id']:
-                network_has_port_in_router = True
-                # print(json.dumps(port, indent=4))
-                break
-
-        self.assertTrue(network_has_port_in_router)
+        # Disconnect
+        tasks.disconnect_subnet(rtr, subnet)
+        self.assertFalse(self._network_has_port_in_router(net, rtr))
 
 
 if __name__ == '__main__':

@@ -52,6 +52,14 @@ def connect_subnet(router, subnet, **kwargs):
     neutron_client.add_interface_router(rtr['id'], {'subnet_id': subnet['id']})
 
 @task
+def disconnect_subnet(router, subnet, **kwargs):
+    neutron_client = _init_client()
+    rtr = _get_router_by_name(neutron_client, router['name'])
+    subnet = _get_subnet_by_name(neutron_client, subnet['name'])
+    neutron_client.remove_interface_router(rtr['id'], {'subnet_id': subnet['id']})
+
+
+@task
 def terminate(router, **kwargs):
     neutron_client = _init_client()
     rtr = _get_router_by_name(neutron_client, router['name'])
