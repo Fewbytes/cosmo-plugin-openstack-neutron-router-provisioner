@@ -73,25 +73,32 @@ class OpenstackNeutronRouterProvisionerTestCase(unittest.TestCase):
                 return net
         return None
 
-    def test_router_with_gateway(self):
+    def _test_router_with_gateway(self, enable_snat):
 
         ext_net = self.find_external_net()
         if not ext_net:
             raise RuntimeError("Failed to find external network for router gateway test")
 
-        name = self.name_prefix + 'rtr_ext_gw'
+        name = self.name_prefix + 'rtr_ext_gw_snat_'
+        name += ['dis', 'ena'][enable_snat]
         router = {
             'name': name,
-            'gateway': ext_net['name']
+            'gateway': ext_net['name'],
         }
 
-        tasks.provision(name, router)
+        tasks.provision(name, router, enable_snat)
         rtr = tasks._get_router_by_name(self.neutron_client, name)
         self.assertIsNotNone(rtr)
         rtr = tasks._get_router_by_name(self.neutron_client, router['name'])
         self.assertIsNotNone(rtr['external_gateway_info'])
         self.assertEquals(rtr['external_gateway_info']['network_id'], ext_net['id'])
-        self.assertTrue(rtr['external_gateway_info']['enable_snat'])  # Empirical
+        self.assertEquals(rtr['external_gateway_info']['enable_snat'], enable_snat)
+
+    def test_router_with_gateway_snat_enabled(self):
+        self._test_router_with_gateway(True)
+
+    def test_router_with_gateway_snat_disabled(self):
+        self._test_router_with_gateway(False)
 
     def _test_connect_gateway(self, enable_snat):
         ext_net = self.find_external_net()
@@ -113,7 +120,6 @@ class OpenstackNeutronRouterProvisionerTestCase(unittest.TestCase):
         rtr = tasks._get_router_by_name(self.neutron_client, name)
         self.assertIsNotNone(rtr['external_gateway_info'])
         self.assertEquals(rtr['external_gateway_info']['network_id'], ext_net['id'])
-        # print(json.dumps(rtr, indent=4))
         self.assertEquals(rtr['external_gateway_info']['enable_snat'], enable_snat)
 
     def test_connect_gateway_snat_enabled(self):

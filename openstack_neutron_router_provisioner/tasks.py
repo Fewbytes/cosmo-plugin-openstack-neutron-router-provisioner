@@ -15,7 +15,7 @@ from neutronclient.neutron import client
 from cosmo.events import send_event
 
 @task
-def provision(__cloudify_id, router, **kwargs):
+def provision(__cloudify_id, router, enable_snat=True, **kwargs):
     neutron_client = _init_client()
     if _get_router_by_name(neutron_client, router['name']):
         raise RuntimeError("Can not provision router with name '{0}' because router with such name already exists"
@@ -27,9 +27,13 @@ def provision(__cloudify_id, router, **kwargs):
 
     if 'gateway' in router:
         rtr_dict['external_gateway_info'] = {
-            'network_id': _get_network_by_name(neutron_client, router['gateway'])['id']
+            'network_id': _get_network_by_name(neutron_client, router['gateway'])['id'],
+            'enable_snat': enable_snat,
         }
 
+
+    logger = logging.getLogger('provision')
+    logger.info("XXX: {0}".format(rtr_dict))
     rtr = neutron_client.create_router({'router': rtr_dict})['router']
 
     send_event(__cloudify_id, "rtr-" + router['name'], "router status", "state", "running")
