@@ -32,8 +32,6 @@ def provision(__cloudify_id, router, enable_snat=True, **kwargs):
         }
 
 
-    logger = logging.getLogger('provision')
-    logger.info("XXX: {0}".format(rtr_dict))
     rtr = neutron_client.create_router({'router': rtr_dict})['router']
 
     send_event(__cloudify_id, "rtr-" + router['name'], "router status", "state", "running")
