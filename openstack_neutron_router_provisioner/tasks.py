@@ -14,6 +14,7 @@ from neutronclient.neutron import client
 # Cosmo
 from cosmo.events import send_event
 
+
 @task
 def provision(__cloudify_id, router, enable_snat=True, **kwargs):
     neutron_client = _init_client()
@@ -31,7 +32,6 @@ def provision(__cloudify_id, router, enable_snat=True, **kwargs):
             'enable_snat': enable_snat,
         }
 
-
     rtr = neutron_client.create_router({'router': rtr_dict})['router']
 
     send_event(__cloudify_id, "rtr-" + router['name'], "router status", "state", "running")
@@ -43,7 +43,8 @@ def connect_gateway(router, network, enable_snat=True, **kwargs):
     rtr = _get_router_by_name(neutron_client, router['name'])
     net = _get_network_by_name(neutron_client, network['name'])
     neutron_client.add_gateway_router(rtr['id'], {'network_id': net['id'], 'enable_snat': enable_snat})
-    
+
+
 @task
 def connect_subnet(router, subnet, **kwargs):
     neutron_client = _init_client()
@@ -51,6 +52,7 @@ def connect_subnet(router, subnet, **kwargs):
     subnet = _get_subnet_by_name(neutron_client, subnet['name'])
     # print(dir(neutron_client))
     neutron_client.add_interface_router(rtr['id'], {'subnet_id': subnet['id']})
+
 
 @task
 def disconnect_subnet(router, subnet, **kwargs):
@@ -88,11 +90,13 @@ def _init_keystone_client():
     args = {field: cfg[field] for field in ('username', 'password', 'tenant_name', 'auth_url')}
     return ksclient.Client(**args)
 
+
 def _make_get_obj_by_name(single):
 
     plural = single + 's'
+
     def f(neutron_client, name):
-        matching_objs = getattr(neutron_client, 'list_'+ plural)(name=name)[plural]
+        matching_objs = getattr(neutron_client, 'list_' + plural)(name=name)[plural]
 
         if len(matching_objs) == 0:
             return None
