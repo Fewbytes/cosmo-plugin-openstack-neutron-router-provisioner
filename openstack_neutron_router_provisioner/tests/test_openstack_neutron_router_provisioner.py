@@ -113,7 +113,7 @@ class OpenstackNeutronRouterProvisionerTestCase(unittest.TestCase):
         rtr = tasks._get_router_by_name(self.neutron_client, name)
         self.assertIsNotNone(rtr['external_gateway_info'])
         self.assertEquals(rtr['external_gateway_info']['network_id'], ext_net['id'])
-        print(json.dumps(rtr, indent=4))
+        # print(json.dumps(rtr, indent=4))
         self.assertEquals(rtr['external_gateway_info']['enable_snat'], enable_snat)
 
     def test_connect_gateway_snat_enabled(self):
