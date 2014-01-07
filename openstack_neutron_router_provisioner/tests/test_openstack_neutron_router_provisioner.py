@@ -52,7 +52,7 @@ class OpenstackNeutronRouterProvisionerTestCase(unittest.TestCase):
                 getattr(self.neutron_client, 'delete_' + obj_type_single)(obj['id'])
 
     def test_router_provision_and_terminate(self):
-        name = self.name_prefix + 'rtr1'
+        name = self.name_prefix + 'rtr_prov_term'
         router = {
             'name': name,
         }
@@ -79,7 +79,7 @@ class OpenstackNeutronRouterProvisionerTestCase(unittest.TestCase):
         if not ext_net:
             raise RuntimeError("Failed to find external network for router gateway test")
 
-        name = self.name_prefix + 'rtr2'
+        name = self.name_prefix + 'rtr_ext_gw'
         router = {
             'name': name,
             'gateway': ext_net['name']
@@ -93,6 +93,35 @@ class OpenstackNeutronRouterProvisionerTestCase(unittest.TestCase):
         self.assertEquals(rtr['external_gateway_info']['network_id'], ext_net['id'])
         self.assertTrue(rtr['external_gateway_info']['enable_snat'])  # Empirical
 
+    def _test_connect_gateway(self, enable_snat):
+        ext_net = self.find_external_net()
+        if not ext_net:
+            raise RuntimeError("Failed to find external network for router gateway test")
+
+        name = self.name_prefix + 'rtr_cn_egw_snat_'
+        name += ['dis', 'ena'][enable_snat]
+
+        router = {
+            'name': name,
+        }
+
+        tasks.provision(name, router)
+        rtr = tasks._get_router_by_name(self.neutron_client, name)
+        self.assertIsNotNone(rtr)
+        self.assertIsNone(rtr['external_gateway_info'])
+        tasks.connect_gateway(router, ext_net, enable_snat=enable_snat)
+        rtr = tasks._get_router_by_name(self.neutron_client, name)
+        self.assertIsNotNone(rtr['external_gateway_info'])
+        self.assertEquals(rtr['external_gateway_info']['network_id'], ext_net['id'])
+        print(json.dumps(rtr, indent=4))
+        self.assertEquals(rtr['external_gateway_info']['enable_snat'], enable_snat)
+
+    def test_connect_gateway_snat_enabled(self):
+        self._test_connect_gateway(True)
+
+    def test_connect_gateway_snat_disabled(self):
+        self._test_connect_gateway(False)
+
     def _network_has_port_in_router(self, net, rtr):
         for port in self._list_all_objs('port'):
             if port.get('device_owner') == 'network:router_interface' and \
@@ -104,7 +133,7 @@ class OpenstackNeutronRouterProvisionerTestCase(unittest.TestCase):
     def test_connect_disconnect_subnet(self):
 
         # Router
-        name = self.name_prefix + 'rtr3'
+        name = self.name_prefix + 'rtr_subn'
         router = {
             'name': name,
         }
@@ -115,12 +144,12 @@ class OpenstackNeutronRouterProvisionerTestCase(unittest.TestCase):
         # Net
         net = self.neutron_client.create_network({
             'network': {
-                'name': self.name_prefix + 'net1'
+                'name': self.name_prefix + 'net_subn'
             }
         })['network']
 
         # Subnet
-        name = self.name_prefix + 'subnet1'
+        name = self.name_prefix + 'subnet_subn'
         subnet = self.neutron_client.create_subnet({
             'subnet': {
                 'network_id': net['id'],

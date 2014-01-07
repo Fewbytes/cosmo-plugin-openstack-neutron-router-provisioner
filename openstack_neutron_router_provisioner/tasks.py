@@ -35,13 +35,12 @@ def provision(__cloudify_id, router, **kwargs):
     send_event(__cloudify_id, "rtr-" + router['name'], "router status", "state", "running")
 
 
-# Untested and unused for now
 @task
-def connect_gateway(router, network, **kwargs):
+def connect_gateway(router, network, enable_snat=True, **kwargs):
     neutron_client = _init_client()
     rtr = _get_router_by_name(neutron_client, router['name'])
     net = _get_network_by_name(neutron_client, network['name'])
-    neutron_client.add_gateway_router(rtr['id'], {'network_id': net['id']})
+    neutron_client.add_gateway_router(rtr['id'], {'network_id': net['id'], 'enable_snat': enable_snat})
     
 @task
 def connect_subnet(router, subnet, **kwargs):
