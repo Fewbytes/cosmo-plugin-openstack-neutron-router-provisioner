@@ -15,6 +15,7 @@ from neutronclient.neutron import client
 from cosmo.events import send_event
 
 
+# TODO: rename to create()
 @task
 def provision(__cloudify_id, router, enable_snat=True, **kwargs):
     neutron_client = _init_client()
@@ -46,13 +47,14 @@ def connect_gateway(router, network, enable_snat=True, **kwargs):
 
 
 @task
-def connect_subnet(router, subnet, **kwargs):
+def connect_subnet(__source_properties, __target_properties, **kwargs):
+    subnet = __source_properties['subnet']
+    router = __target_properties['router']
     neutron_client = _init_client()
     rtr = _get_router_by_name(neutron_client, router['name'])
     subnet = _get_subnet_by_name(neutron_client, subnet['name'])
     # print(dir(neutron_client))
     neutron_client.add_interface_router(rtr['id'], {'subnet_id': subnet['id']})
-
 
 @task
 def disconnect_subnet(router, subnet, **kwargs):
@@ -62,6 +64,7 @@ def disconnect_subnet(router, subnet, **kwargs):
     neutron_client.remove_interface_router(rtr['id'], {'subnet_id': subnet['id']})
 
 
+# TODO: rename to delete()
 @task
 def terminate(router, **kwargs):
     neutron_client = _init_client()

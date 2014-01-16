@@ -2,6 +2,8 @@
 imports:
     - 'cloudify.types'
     - 'neutron-router-type.yaml'
+    - 'neutron-network-type.yaml'
+    - 'neutron-subnet-type.yaml'
 
 
 blueprint:
@@ -11,8 +13,6 @@ blueprint:
         -
             name: 'neutron_router'
             type: 'neutron_router'
-            interfaces:
-                    - 'cloudify.interfaces.router_provisioner'
             properties:
                 router:
                     name: 'neutron_simple_router_test'
@@ -28,13 +28,10 @@ blueprint:
 
         -
             name: 'neutron_router_with_gw'
-            type: 'neutron_router'
-            interfaces:
-                    - 'cloudify.interfaces.router_provisioner'
+            type: 'neutron_router_with_gw'
             properties:
                 router:
                     name: 'neutron_router_with_gw_test'
-                    gateway: 'public'
             policies:
                 -
                     name: 'start_detection_policy'
@@ -44,3 +41,65 @@ blueprint:
                             properties:
                                 service: 'router status'
                                 state: 'running'
+        -
+            name: 'neutron_network'
+            type: 'neutron_network'
+            properties:
+                network:
+                    name: 'neutron_network_test'
+
+            policies:
+                -
+                    name: 'start_detection_policy'
+                    rules:
+                        -
+                            type: 'state_equals'
+                            properties:
+                                service: 'network status'
+                                state: 'running'
+        -
+            name: 'neutron_subnet'
+            type: 'neutron_subnet'
+            relationships:
+                -
+                    type: 'cloudify.relationships.contained_in'
+                    target: 'neutron_network'
+                -
+                    type: 'cloudify.relationships.connected_to'
+                    target: 'neutron_router_with_subnet'
+                    target_interfaces:
+                        cloudify.interfaces.relationship_lifecycle:
+                            - establish: cloudify.plugins.openstack_neutron_router_provisioner.tasks.connect_subnet
+            properties:
+                network_name: 'neutron_network_test'
+                subnet:
+                    name: 'neutron_subnet_test'
+                    ip_version: 4
+                    cidr: '10.10.10.0/24'
+
+            policies:
+                -
+                    name: 'start_detection_policy'
+                    rules:
+                        -
+                            type: 'state_equals'
+                            properties:
+                                service: 'subnet status'
+                                state: 'running'
+
+        -
+            name: 'neutron_router_with_subnet'
+            type: 'neutron_router'
+            properties:
+                router:
+                    name: 'neutron_router_with_subnet'
+            policies:
+                -
+                    name: 'start_detection_policy'
+                    rules:
+                        -
+                            type: 'state_equals'
+                            properties:
+                                service: 'router status'
+                                state: 'running'
+

@@ -166,7 +166,7 @@ class OpenstackNeutronRouterProvisionerTestCase(unittest.TestCase):
         })['subnet']
 
         # Connect router and subnet
-        tasks.connect_subnet(rtr, subnet)
+        tasks.connect_subnet({'subnet': subnet}, {'router': rtr})
         self.assertTrue(self._network_has_port_in_router(net, rtr))
 
         # Disconnect
